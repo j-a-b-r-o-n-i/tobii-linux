@@ -4,3 +4,4 @@ vendor/
 *.so
 *.tar.gz
 build/
+local/

@@ -38,9 +38,8 @@ with the Eye Tracker 5:
 - The gaze stream runs at about 30 samples a second, but every sample is
   invalid until the screen size is set and the tracker is calibrated.
 - The user presence stream works.
-- The tracker has no head pose stream. On Windows, head pose for this tracker
-  is computed by Tobii's host software, so it has to come from somewhere else
-  here.
+- The tracker has no head pose stream of its own. Head pose comes from Tobii
+  Engine, a host program in the same packages (see below).
 - Out of the box, the screen size stored on the tracker is a 4 mm by 4 mm
   placeholder. Setting it and calibrating both need a config-level licence,
   which only Tobii's calibration app (Tobii Config, also in the packages)
@@ -77,6 +76,42 @@ over the Chrome debugging protocol, since the app has no developer tools menu.
 
 Set up the screen, then follow the calibration dots. Each dot only bursts once
 the tracker sees you looking near it, so the first round can take a while.
+
+## Head pose from Tobii Engine
+
+Tobii Engine 0.1.6 (`vendor/engine-run`) adds a head pose stream to the Eye
+Tracker 5. With it running, Stream Engine reports head pose as supported and
+sends position and all three rotations at about 30 samples a second. In a test,
+turning, nodding and tilting showed up as yaw from about -10 to +25 degrees,
+pitch from 6 to 22 degrees, and a few degrees of roll.
+
+Things to know:
+
+- The engine ships IS4 firmware and a firmware upgrader. The copy in
+  `vendor/engine-run` has its `firmware` folder removed so it has nothing it
+  could flash onto an IS5 tracker.
+- It needs `libsqlcipher.so.0` and `libuv.so.0.10` (from the `deps` folder of
+  the repackaging repo) and OpenSSL 1.1 (Debian 11's `libssl1.1` package,
+  checked against Debian's published SHA256), all unpacked into
+  `vendor/deps`.
+- The head pose comes from a face tracker licensed from ULSee and built into
+  the engine's IS4 module. Its key has an expiry date, which has passed, so on
+  a current clock it logs `Bad key!` and every head pose sample is invalid.
+  `scripts/with-engine.sh` reads an optional, uncommitted
+  `local/engine-env.sh` for machine-specific settings for the engine.
+- The first connection after the USB service starts often gets no answer, and
+  the engine gives up after one try, so `scripts/with-engine.sh` connects once
+  before starting it.
+
+Run a client with the engine:
+`scripts/run-sandboxed.sh scripts/with-engine.sh build/probe 15`
+
+## Head position from the eye positions
+
+`probe/eyes.c` reads the 3D position of each eye, which needs no engine. It
+gives head position and roll, but not usable yaw: the depth difference between
+the eyes stayed around 5 mm whichever way the head turned. It's a fallback for
+position only.
 
 ## Trying it
 
