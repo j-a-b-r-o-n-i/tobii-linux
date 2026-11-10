@@ -26,13 +26,43 @@ The Eye Tracker 5 shows up as `2104:0313 Tobii Technology AB EyeChip`.
 
 The old Linux packages come from a community repackaging at
 https://github.com/MoscowskyAnton/tobii_eye_tracker_linux_installer. Its
-install script uses `apt` and `dpkg`, so it only runs on Debian and Ubuntu, but
-the packages can be unpacked and run by hand on other distributions.
+install script uses `apt` and `dpkg`, so it only runs on Debian and Ubuntu. The
+packages can be unpacked into `vendor/` (ignored by git) and run from there on
+other distributions.
 
-- The USB service (`tobiiusbservice` 2.1.5) ships udev rules for every product
-  ID from `0101` to `05FF`, which includes the Eye Tracker 5's `0313`.
-- The service and its three libraries load on a current Arch-based system with
-  no missing dependencies.
-- The service writes a PID file to `/var/run/tobiiusb/` and needs write access
-  to the tracker's USB device. `udev/70-tobii.rules` grants that access to the
-  logged-in user.
+Tobii's USB service (`tobiiusbservice` 2.1.5) and Stream Engine 3.0.4 work
+with the Eye Tracker 5:
+
+- Stream Engine finds the tracker as `tobii-ttp://IS5FF-<serial>` and connects.
+  The tracker reports model `IS5_Large_Eyetracker_5`, generation `IS5`.
+- The gaze stream runs at about 30 samples a second, but every sample is
+  invalid until the screen size is set and the tracker is calibrated.
+- The user presence stream works.
+- The tracker has no head pose stream. On Windows, head pose for this tracker
+  is computed by Tobii's host software, so it has to come from somewhere else
+  here.
+- The screen size stored on the tracker is a 4 mm by 4 mm placeholder. Setting
+  it and calibrating both need a config-level licence, which only Tobii's
+  calibration app (Tobii Config, also in the packages) carries.
+
+The service writes its PID file and sockets under `/var/run`, which needs root.
+`scripts/run-sandboxed.sh` avoids that by running the service and a client
+program together in a private user and mount namespace with a writable `/run`.
+The tracker's USB device must be accessible to your user, which
+`udev/70-tobii.rules` arranges.
+
+## Trying it
+
+1. Install the udev rule:
+   `sudo cp udev/70-tobii.rules /etc/udev/rules.d/ && sudo udevadm control --reload && sudo udevadm trigger --attr-match=idVendor=2104`
+2. Unpack the packages from the repackaging repo into `vendor/`:
+   `vendor/usbservice` (data of the `tobiiusbservice` deb),
+   `vendor/stream_engine` (its `lib/include` and `lib/lib`) and
+   `vendor/config` (the `tobii_config` deb).
+3. Build the test programs in `probe/` against Stream Engine, for example
+   `gcc -o build/probe probe/probe.c -Ivendor/stream_engine/include -Lvendor/stream_engine/lib/x64 -ltobii_stream_engine -pthread -Wl,-rpath,$PWD/vendor/stream_engine/lib/x64`.
+4. Run one: `scripts/run-sandboxed.sh build/probe 8`.
+
+`probe/probe.c` connects step by step and prints gaze, head pose and presence.
+`probe/state.c` prints the screen size, mounting and calibration stored on the
+tracker.
