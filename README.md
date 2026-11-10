@@ -130,6 +130,11 @@ tracker ignores its first connection, which happens when the previous
 connection closed moments earlier, so `scripts/with-engine.sh` restarts it
 until it connects.
 
+`scripts/install-launcher.sh` adds a "Head tracking" entry to the application
+menu that runs `scripts/headtracking-toggle.sh`: one click starts head tracking
+and opens opentrack, the next click stops it, with desktop notifications for
+each.
+
 In opentrack (2026.1.0 from the AUR), set:
 
 - Input: UDP over network, port 4242.
