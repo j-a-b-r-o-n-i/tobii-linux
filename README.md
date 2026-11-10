@@ -113,6 +113,34 @@ gives head position and roll, but not usable yaw: the depth difference between
 the eyes stayed around 5 mm whichever way the head turned. It's a fallback for
 position only.
 
+## Head tracking in games through opentrack
+
+`bridge/tobii_opentrack.c` reads head pose from Stream Engine and sends it to
+opentrack's "UDP over network" input on port 4242. It sends X, Y, Z in
+centimetres and yaw, pitch and roll in degrees, and sends nothing while
+nobody is in view, so opentrack holds the last pose. Build it like the probes:
+
+```
+gcc -O2 -o build/tobii_opentrack bridge/tobii_opentrack.c -Ivendor/stream_engine/include -Lvendor/stream_engine/lib/x64 -ltobii_stream_engine -pthread -Wl,-rpath,$PWD/vendor/stream_engine/lib/x64
+```
+
+`scripts/start-headtracking.sh` starts the USB service, Tobii Engine and the
+bridge together, and stops all three on Ctrl+C. Tobii Engine crashes if the
+tracker ignores its first connection, which happens when the previous
+connection closed moments earlier, so `scripts/with-engine.sh` restarts it
+until it connects.
+
+In opentrack (2026.1.0 from the AUR), set:
+
+- Input: UDP over network, port 4242.
+- Output: Wine, with a custom path to the same `wine` binary and the same
+  prefix the game uses. Esync and fsync must match the game's settings; Wine 11
+  uses ntsync by default, so leave both off unless the game turns them on.
+- Filter: Accela.
+
+In Star Citizen, set the head tracking source to TrackIR. Its own "recenter
+head tracking" binding works with this.
+
 ## Trying it
 
 1. Install the udev rule:
