@@ -143,6 +143,17 @@ In opentrack (2026.1.0 from the AUR), set:
   uses ntsync by default, so leave both off unless the game turns them on.
 - Filter: Accela.
 
+opentrack's Wine output runs a helper program inside the game's prefix. Game
+launch scripts that run `wineserver -k` (the LUG helper's script does, to clear
+out old Wine processes) close that helper, and the game then sees no head
+tracking. Either press Start in opentrack after the game's launcher is up, or
+have the launch script start the helper again after its last `wineserver`
+call, the same way opentrack does:
+
+```
+OTR_WINE_PROTO=3 WINELOADERNOEXEC=1 "$wine_path"/wine /usr/libexec/opentrack/opentrack-wrapper-wine.exe.so &
+```
+
 In Star Citizen, set the head tracking source to TrackIR. Its own "recenter
 head tracking" binding works with this.
 
