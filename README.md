@@ -41,15 +41,42 @@ with the Eye Tracker 5:
 - The tracker has no head pose stream. On Windows, head pose for this tracker
   is computed by Tobii's host software, so it has to come from somewhere else
   here.
-- The screen size stored on the tracker is a 4 mm by 4 mm placeholder. Setting
-  it and calibrating both need a config-level licence, which only Tobii's
-  calibration app (Tobii Config, also in the packages) carries.
+- Out of the box, the screen size stored on the tracker is a 4 mm by 4 mm
+  placeholder. Setting it and calibrating both need a config-level licence,
+  which only Tobii's calibration app (Tobii Config, also in the packages)
+  carries.
+- Once Tobii Config has set the screen size and calibrated, gaze comes through
+  as valid screen positions.
 
 The service writes its PID file and sockets under `/var/run`, which needs root.
 `scripts/run-sandboxed.sh` avoids that by running the service and a client
 program together in a private user and mount namespace with a writable `/run`.
 The tracker's USB device must be accessible to your user, which
 `udev/70-tobii.rules` arranges.
+
+## Running Tobii Config
+
+Tobii Config 0.1.6 is an Electron app from 2018. Three things stop it running
+on a current Arch-based system:
+
+- It needs GTK2 and GConf: `sudo pacman -S gtk2` and `paru -S gconf` (AUR).
+- Its copy of Stream Engine asks for an executable stack, and glibc 2.41 and
+  later refuse to load such a library after startup. The window stays blank
+  and the page logs `cannot enable executable stack as shared object
+  requires`. `scripts/clear_execstack.py` clears that flag:
+  `scripts/clear_execstack.py vendor/config/opt/tobii_config/resources/resources/libtobii_stream_engine.so`
+- It has to run through XWayland, without Chromium's sandbox (inside the
+  namespace it appears to run as root) and without the GPU:
+
+```
+scripts/run-sandboxed.sh env -u WAYLAND_DISPLAY $PWD/vendor/config/opt/tobii_config/tobii_config --no-sandbox --disable-gpu
+```
+
+Adding `--remote-debugging-port=9333` lets you read the page's console errors
+over the Chrome debugging protocol, since the app has no developer tools menu.
+
+Set up the screen, then follow the calibration dots. Each dot only bursts once
+the tracker sees you looking near it, so the first round can take a while.
 
 ## Trying it
 
