@@ -8,6 +8,25 @@ Tobii does not support its consumer trackers on Linux. This repo records what
 works, what doesn't, and the code written to fill the gaps. It does not contain
 Tobii's binaries, because their licence doesn't allow redistribution.
 
+## Status
+
+For Star Citizen, use [tobii-faithful](https://github.com/SciFi-Bob/tobii-faithful)
+instead of this. It feeds head pose and gaze into the game's own Tobii support,
+works out head pose itself, and needs none of Tobii's 2018 software. It works
+here with Star Citizen under Wine.
+
+What this repo built does work up to opentrack: head pose from Tobii Engine
+reaches opentrack, and opentrack's Wine output runs in the game's prefix. But
+Star Citizen never loaded opentrack's `NPClient64.dll`, even with TrackIR
+selected as the head tracking source, the registry entry and shared memory in
+place, and the DLL loading fine from the same path in another prefix. Wine's
+`+loaddll` log shows every other DLL the game loads, including Tobii's. The
+cause wasn't found; Easy Anti-Cheat rejecting an unsigned TrackIR DLL fits but
+is unconfirmed. Games without anti-cheat may well work with it.
+
+The rest of this README is kept as a record of how far Tobii's own Linux
+software can be taken with the Eye Tracker 5.
+
 ## The plan
 
 1. See whether Tobii's old Linux software (the USB service and Stream Engine
