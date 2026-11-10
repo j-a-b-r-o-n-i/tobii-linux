@@ -1,0 +1,3 @@
+# Give the logged-in desktop user access to Tobii eye trackers (USB vendor 2104),
+# so the USB service can run without root.
+SUBSYSTEM=="usb", ATTRS{idVendor}=="2104", MODE="0660", TAG+="uaccess"

@@ -1,0 +1,6 @@
+# Tobii's binaries and packages are not redistributable; fetch them locally.
+vendor/
+*.deb
+*.so
+*.tar.gz
+build/
